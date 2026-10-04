@@ -30,6 +30,14 @@ export class LocalVectorDB {
     await this.flush();
   }
 
+  async insertBatch(items: { id: string; vector: number[]; metadata?: Record<string, any> }[]) {
+    for (const item of items) {
+      if (item.vector.length !== this.dim) throw new Error("Vector dimension mismatch");
+      this.crdt.append({ id: item.id, vector: item.vector, metadata: item.metadata || {} });
+    }
+    await this.flush();
+  }
+
   async delete(id: string) {
     this.crdt.delete(id);
     await this.flush();
