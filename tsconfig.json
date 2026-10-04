@@ -5,6 +5,8 @@
     "moduleResolution": "node",
     "strict": true,
     "declaration": true,
-    "outDir": "./dist"
-  }
+    "outDir": "./dist",
+    "skipLibCheck": true
+  },
+  "include": ["src/**/*"]
 }
