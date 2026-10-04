@@ -4,3 +4,7 @@ export * from './crdt.js';
 export * from './opfs.js';
 export * from './webgpu_compute.js';
 export * from './hnsw.js';
+export * from './filter.js';
+export * from './quant.js';
+export * from './sync.js';
+export * from './math.js';
