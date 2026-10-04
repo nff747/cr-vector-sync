@@ -25,6 +25,21 @@ export class CRDTLog {
     return fullOp;
   }
 
+  delete(id: string) {
+    this.logicalClock += 1;
+    const tombstone: Operation = {
+      id,
+      vector: [],
+      metadata: {},
+      timestamp: Date.now(),
+      clock: this.logicalClock,
+      author: this.localId,
+      deleted: true
+    };
+    this.log.push(tombstone);
+    return tombstone;
+  }
+
   merge(remoteLog: Operation[]) {
     const seen = new Set(this.log.map(o => `${o.id}-${o.author}-${o.clock}`));
     for (const op of remoteLog) {
@@ -33,7 +48,6 @@ export class CRDTLog {
         this.logicalClock = Math.max(this.logicalClock, op.clock || 0);
       }
     }
-    // Sort deterministically by logical clock, timestamp, then author
     this.log.sort((a, b) => {
       if (a.clock !== b.clock) {
         return a.clock - b.clock;
