@@ -1,6 +1,6 @@
 {
   "name": "cr-vector-sync",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "type": "module",
   "description": "Local-first WebGPU vector database with CRDT peer-to-peer sync.",
   "scripts": {
