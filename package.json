@@ -1,0 +1,18 @@
+{
+  "name": "cr-vector-sync",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Local-first WebGPU vector database with CRDT peer-to-peer sync.",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "author": "nff747 <nff747@users.noreply.github.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@webgpu/types": "^0.1.50",
+    "typescript": "^5.6.2",
+    "vitest": "^2.1.1"
+  }
+}
