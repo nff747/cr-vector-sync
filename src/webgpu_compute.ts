@@ -84,13 +84,13 @@ export class WebGPUCompute {
       size: dataset.byteLength,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
-    this.device.queue.writeBuffer(datasetBuffer, 0, dataset);
+    this.device.queue.writeBuffer(datasetBuffer, 0, dataset as unknown as BufferSource);
 
     const queryBuffer = this.device.createBuffer({
       size: query.byteLength,
       usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST,
     });
-    this.device.queue.writeBuffer(queryBuffer, 0, query);
+    this.device.queue.writeBuffer(queryBuffer, 0, query as unknown as BufferSource);
 
     const scoresBuffer = this.device.createBuffer({
       size: numVectors * 4,
@@ -101,7 +101,7 @@ export class WebGPUCompute {
       size: 16,
       usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
     });
-    this.device.queue.writeBuffer(paramsBuffer, 0, new Uint32Array([dim, numVectors, metricId, 0]));
+    this.device.queue.writeBuffer(paramsBuffer, 0, new Uint32Array([dim, numVectors, metricId, 0]) as unknown as BufferSource);
 
     const bindGroup = this.device.createBindGroup({
       layout: this.pipeline.getBindGroupLayout(0),

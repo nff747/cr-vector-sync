@@ -13,7 +13,7 @@ export class OPFSSync {
   async writeVectors(vectors: Float32Array) {
     if (!this.fileHandle) return;
     const writable = await this.fileHandle.createWritable();
-    await writable.write(vectors);
+    await writable.write(vectors as unknown as BufferSource);
     await writable.close();
   }
 

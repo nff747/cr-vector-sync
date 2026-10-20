@@ -6,6 +6,8 @@
     "strict": true,
     "declaration": true,
     "outDir": "./dist",
+    "lib": ["ES2022", "DOM"],
+    "types": ["@webgpu/types", "node"],
     "skipLibCheck": true
   },
   "include": ["src/**/*"]
