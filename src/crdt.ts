@@ -8,6 +8,42 @@ export type Operation = {
   deleted?: boolean;
 };
 
+export type VectorClock = Record<string, number>;
+
+export type CausalRelation = 'EQUALS' | 'HAPPENS_BEFORE' | 'HAPPENS_AFTER' | 'CONCURRENT';
+
+/**
+ * Compares two vector clocks to establish their partial order causal relationship.
+ */
+export function compareVectorClocks(a: VectorClock, b: VectorClock): CausalRelation {
+  let aHasGreater = false;
+  let bHasGreater = false;
+  const allPeers = new Set([...Object.keys(a), ...Object.keys(b)]);
+
+  for (const peer of allPeers) {
+    const valA = a[peer] || 0;
+    const valB = b[peer] || 0;
+    if (valA > valB) aHasGreater = true;
+    if (valB > valA) bHasGreater = true;
+  }
+
+  if (!aHasGreater && !bHasGreater) return 'EQUALS';
+  if (aHasGreater && !bHasGreater) return 'HAPPENS_AFTER';
+  if (!aHasGreater && bHasGreater) return 'HAPPENS_BEFORE';
+  return 'CONCURRENT';
+}
+
+/**
+ * Merges two vector clocks by computing the component-wise maximum.
+ */
+export function mergeVectorClocks(a: VectorClock, b: VectorClock): VectorClock {
+  const merged: VectorClock = { ...a };
+  for (const [peer, clock] of Object.entries(b)) {
+    merged[peer] = Math.max(merged[peer] || 0, clock);
+  }
+  return merged;
+}
+
 export class CRDTLog {
   log: Operation[] = [];
   localId: string = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : 'peer-' + Math.random().toString(36).substring(2, 9);
@@ -69,5 +105,13 @@ export class CRDTLog {
       }
     }
     return Array.from(state.values());
+  }
+
+  getVectorClock(): VectorClock {
+    const clock: VectorClock = {};
+    for (const op of this.log) {
+      clock[op.author] = Math.max(clock[op.author] || 0, op.clock);
+    }
+    return clock;
   }
 }
