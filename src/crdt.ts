@@ -114,4 +114,38 @@ export class CRDTLog {
     }
     return clock;
   }
+
+  compact(maxAgeMs?: number): { retained: number; purged: number } {
+    const now = Date.now();
+    const latestById = new Map<string, Operation>();
+    for (const op of this.log) {
+      const existing = latestById.get(op.id);
+      if (!existing || op.clock > existing.clock || (op.clock === existing.clock && op.timestamp > existing.timestamp)) {
+        latestById.set(op.id, op);
+      }
+    }
+
+    const initialCount = this.log.length;
+    const compacted: Operation[] = [];
+    for (const op of latestById.values()) {
+      if (op.deleted && maxAgeMs !== undefined) {
+        if (now - op.timestamp > maxAgeMs) {
+          continue;
+        }
+      }
+      compacted.push(op);
+    }
+
+    compacted.sort((a, b) => {
+      if (a.clock !== b.clock) return a.clock - b.clock;
+      if (a.timestamp !== b.timestamp) return a.timestamp - b.timestamp;
+      return a.author.localeCompare(b.author);
+    });
+
+    this.log = compacted;
+    return {
+      retained: this.log.length,
+      purged: initialCount - this.log.length
+    };
+  }
 }

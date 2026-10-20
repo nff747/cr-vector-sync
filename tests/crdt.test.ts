@@ -76,3 +76,34 @@ describe('Vector Clock ordering and merging', () => {
     });
   });
 });
+
+describe('CRDTLog Log Compaction', () => {
+  test('purges intermediate mutations and retains only latest operation per id', () => {
+    const peer = new CRDTLog();
+    peer.append({ id: 'doc-1', vector: [1], metadata: { v: 1 } });
+    peer.append({ id: 'doc-1', vector: [2], metadata: { v: 2 } });
+    peer.append({ id: 'doc-1', vector: [3], metadata: { v: 3 } });
+    peer.append({ id: 'doc-2', vector: [10], metadata: { v: 1 } });
+
+    expect(peer.log.length).toBe(4);
+    const result = peer.compact();
+    expect(result.purged).toBe(2);
+    expect(result.retained).toBe(2);
+    expect(peer.log.length).toBe(2);
+
+    const state = peer.getState();
+    expect(state.find(o => o.id === 'doc-1')?.metadata.v).toBe(3);
+  });
+
+  test('garbage collects expired tombstones when maxAgeMs is exceeded', () => {
+    const peer = new CRDTLog();
+    peer.append({ id: 'doc-1', vector: [1], metadata: {} });
+    const tombstone = peer.delete('doc-1');
+    tombstone.timestamp = Date.now() - 50000; // 50s ago
+
+    const result = peer.compact(10000); // maxAge 10s
+    expect(result.purged).toBe(2); // original op + tombstone
+    expect(result.retained).toBe(0);
+    expect(peer.log.length).toBe(0);
+  });
+});
