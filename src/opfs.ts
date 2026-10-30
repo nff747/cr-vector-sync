@@ -1,9 +1,14 @@
 export class OPFSSync {
   directory: FileSystemDirectoryHandle | null = null;
   fileHandle: FileSystemFileHandle | null = null;
-  private readonly FILENAME = 'cr_vector_store.dat';
-  private readonly TMP_FILENAME = 'cr_vector_store.dat.tmp';
+  private readonly FILENAME: string;
+  private readonly TMP_FILENAME: string;
   private readonly MAGIC_HEADER = 0x56454354; // 'VECT' in hex
+
+  constructor(name?: string) {
+    this.FILENAME = name === undefined ? 'cr_vector_store.dat' : `cr_vector_store_${encodeURIComponent(name)}.dat`;
+    this.TMP_FILENAME = `${this.FILENAME}.tmp`;
+  }
 
   isAvailable(): boolean {
     return typeof navigator !== 'undefined' && Boolean(navigator.storage?.getDirectory);

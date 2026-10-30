@@ -27,4 +27,19 @@ describe('LocalVectorDB', () => {
     expect(filtered.length).toBe(1);
     expect(filtered[0].id).toBe('d1');
   });
+
+  test('scores the current records instead of an unrelated persisted vector file', async () => {
+    const db = new LocalVectorDB({ name:'test', dim:2 });
+    await db.init();
+    await db.insert('east', [1,0]);
+    await db.insert('north', [0,1]);
+    db.opfs.readVectors = async () => new Float32Array([0,1,1,0]);
+    expect((await db.search([1,0], 1))[0].id).toBe('east');
+  });
+
+  test('rejects an invalid batch before appending any record', async () => {
+    const db = new LocalVectorDB({ name:'test', dim:2 });
+    await expect(db.insertBatch([{id:'valid',vector:[1,0]}, {id:'invalid',vector:[1]}])).rejects.toThrow('dimension');
+    expect(db.crdt.getState()).toHaveLength(0);
+  });
 });

@@ -95,15 +95,35 @@ describe('CRDTLog Log Compaction', () => {
     expect(state.find(o => o.id === 'doc-1')?.metadata.v).toBe(3);
   });
 
-  test('garbage collects expired tombstones when maxAgeMs is exceeded', () => {
+  test('retains tombstones even when old peers have not acknowledged them', () => {
     const peer = new CRDTLog();
-    peer.append({ id: 'doc-1', vector: [1], metadata: {} });
+    const original = peer.append({ id: 'doc-1', vector: [1], metadata: {} });
     const tombstone = peer.delete('doc-1');
     tombstone.timestamp = Date.now() - 50000; // 50s ago
 
     const result = peer.compact(10000); // maxAge 10s
-    expect(result.purged).toBe(2); // original op + tombstone
-    expect(result.retained).toBe(0);
-    expect(peer.log.length).toBe(0);
+    expect(result.purged).toBe(1);
+    expect(result.retained).toBe(1);
+    expect(peer.log[0].deleted).toBe(true);
+    peer.merge([original]);
+    expect(peer.getState()).toHaveLength(0);
+  });
+
+  test('deduplicates a repeated remote operation in one merge', () => {
+    const source = new CRDTLog();
+    const op = source.append({ id:'one', vector:[1], metadata:{} });
+    const peer = new CRDTLog();
+    peer.merge([op, op]);
+    expect(peer.log).toHaveLength(1);
+  });
+
+  test('uses the same tie-breaker during compaction as during merge', () => {
+    const peer = new CRDTLog();
+    const first = {id:'x', vector:[1], metadata:{}, timestamp:1, clock:1, author:'a'};
+    const last = {id:'x', vector:[2], metadata:{}, timestamp:1, clock:1, author:'b'};
+    peer.merge([last, first]);
+    expect(peer.getState()[0].vector).toEqual([2]);
+    peer.compact();
+    expect(peer.getState()[0].vector).toEqual([2]);
   });
 });

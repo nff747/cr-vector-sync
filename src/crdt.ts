@@ -12,6 +12,12 @@ export type VectorClock = Record<string, number>;
 
 export type CausalRelation = 'EQUALS' | 'HAPPENS_BEFORE' | 'HAPPENS_AFTER' | 'CONCURRENT';
 
+function compareOperations(a: Operation, b: Operation): number {
+  if (a.clock !== b.clock) return a.clock - b.clock;
+  if (a.timestamp !== b.timestamp) return a.timestamp - b.timestamp;
+  return a.author < b.author ? -1 : a.author > b.author ? 1 : 0;
+}
+
 /**
  * Compares two vector clocks to establish their partial order causal relationship.
  */
@@ -77,22 +83,16 @@ export class CRDTLog {
   }
 
   merge(remoteLog: Operation[]) {
-    const seen = new Set(this.log.map(o => `${o.id}-${o.author}-${o.clock}`));
+    const identity = (o: Operation) => JSON.stringify([o.id, o.author, o.clock]);
+    const seen = new Set(this.log.map(identity));
     for (const op of remoteLog) {
-      if (!seen.has(`${op.id}-${op.author}-${op.clock}`)) {
+      if (!seen.has(identity(op))) {
         this.log.push(op);
+        seen.add(identity(op));
         this.logicalClock = Math.max(this.logicalClock, op.clock || 0);
       }
     }
-    this.log.sort((a, b) => {
-      if (a.clock !== b.clock) {
-        return a.clock - b.clock;
-      }
-      if (a.timestamp !== b.timestamp) {
-        return a.timestamp - b.timestamp;
-      }
-      return a.author.localeCompare(b.author);
-    });
+    this.log.sort(compareOperations);
   }
 
   getState() {
@@ -116,11 +116,12 @@ export class CRDTLog {
   }
 
   compact(maxAgeMs?: number): { retained: number; purged: number } {
-    const now = Date.now();
+    // Age alone cannot prove that every peer observed a deletion.
+    void maxAgeMs;
     const latestById = new Map<string, Operation>();
     for (const op of this.log) {
       const existing = latestById.get(op.id);
-      if (!existing || op.clock > existing.clock || (op.clock === existing.clock && op.timestamp > existing.timestamp)) {
+      if (!existing || compareOperations(op, existing) > 0) {
         latestById.set(op.id, op);
       }
     }
@@ -128,19 +129,10 @@ export class CRDTLog {
     const initialCount = this.log.length;
     const compacted: Operation[] = [];
     for (const op of latestById.values()) {
-      if (op.deleted && maxAgeMs !== undefined) {
-        if (now - op.timestamp > maxAgeMs) {
-          continue;
-        }
-      }
       compacted.push(op);
     }
 
-    compacted.sort((a, b) => {
-      if (a.clock !== b.clock) return a.clock - b.clock;
-      if (a.timestamp !== b.timestamp) return a.timestamp - b.timestamp;
-      return a.author.localeCompare(b.author);
-    });
+    compacted.sort(compareOperations);
 
     this.log = compacted;
     return {

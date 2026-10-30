@@ -11,12 +11,14 @@ export interface VectorDBConfig {
 
 export class LocalVectorDB {
   crdt = new CRDTLog();
-  opfs = new OPFSSync();
+  opfs: OPFSSync;
   compute = new WebGPUCompute();
   dim: number;
 
   constructor(config: VectorDBConfig) {
+    if (!config.name || !Number.isSafeInteger(config.dim) || config.dim <= 0) throw new Error('A name and positive integer dimension are required');
     this.dim = config.dim;
+    this.opfs = new OPFSSync(config.name);
   }
 
   async init() {
@@ -31,8 +33,11 @@ export class LocalVectorDB {
   }
 
   async insertBatch(items: { id: string; vector: number[]; metadata?: Record<string, any> }[]) {
+    // Validate the whole batch before mutating the log.
     for (const item of items) {
-      if (item.vector.length !== this.dim) throw new Error("Vector dimension mismatch");
+      if (item.vector.length !== this.dim) throw new Error('Vector dimension mismatch');
+    }
+    for (const item of items) {
       this.crdt.append({ id: item.id, vector: item.vector, metadata: item.metadata || {} });
     }
     await this.flush();
@@ -62,12 +67,11 @@ export class LocalVectorDB {
     const state = this.crdt.getState();
     if (state.length === 0) return [];
 
-    let buffer = await this.opfs.readVectors();
-    if (!buffer) {
-      buffer = new Float32Array(state.length * this.dim);
-      for (let i = 0; i < state.length; i++) {
-        buffer.set(state[i].vector, i * this.dim);
-      }
+    // The current OPFS format stores neither IDs nor metadata and can belong
+    // to a different DB instance. Search the state that supplies the IDs.
+    const buffer = new Float32Array(state.length * this.dim);
+    for (let i = 0; i < state.length; i++) {
+      buffer.set(state[i].vector, i * this.dim);
     }
 
     const metric = options.metric || 'cosine';

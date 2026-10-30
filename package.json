@@ -1,8 +1,8 @@
 {
   "name": "cr-vector-sync",
-  "version": "1.1.0",
+  "version": "2.0.0-alpha.0",
   "type": "module",
-  "description": "Local-first WebGPU vector database with CRDT peer-to-peer sync.",
+  "description": "Experimental vector search and operation-log components",
   "scripts": {
     "build": "tsc",
     "test": "vitest run"
@@ -15,5 +15,19 @@
     "typescript": "^5.6.2",
     "vite": "^8.3.2",
     "vitest": "^5.0.3"
-  }
+  },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "NOTICE"
+  ]
 }
