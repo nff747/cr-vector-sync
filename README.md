@@ -1,5 +1,7 @@
 # cr-vector-sync
 
+[![Lunar Paradox](https://img.shields.io/badge/Organization-Lunar_Paradox-0a0e1a?style=for-the-badge&logo=probot&logoColor=d7b886)](https://lunarparadox.com)
+
 Experimental vector-search and replication components. This is **not a production-ready database**. Do not rely on it for durable storage, security-sensitive synchronization, or recovery of important data.
 
 `LocalVectorDB` maintains records in an in-memory operation log and ranks the current vectors using WebGPU where available, with a CPU fallback. Filtering is applied to metadata after scoring. Search uses the current in-memory records; it does not treat the OPFS vector-only file as an authoritative database.
@@ -19,3 +21,7 @@ The operation log resolves ordering deterministically and keeps deletion tombsto
 Build and test locally with `npm install`, `npm run build`, and `npm test`. Tests alone do not establish security, durability or cross-device compatibility.
 
 [Apache License 2.0](LICENSE).
+
+---
+
+*A component of the [Lunar Paradox](https://lunarparadox.com) applied systems & graphics laboratory. Engineered by nff747.*
